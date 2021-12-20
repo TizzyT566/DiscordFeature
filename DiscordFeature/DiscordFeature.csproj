@@ -8,6 +8,7 @@
 		<Authors>Thien H.</Authors>
 		<Description>A tiny library for easily creating features for discord bots using Discord.Net.
 Each feature can output to its own dedicated console (Windows only).</Description>
+		<RepositoryUrl>https://github.com/TizzyT566/DiscordFeature</RepositoryUrl>
 	</PropertyGroup>
 
 	<ItemGroup>
