@@ -12,8 +12,7 @@ namespace DiscordFeatureUsageExample.Features.Echo
 
         private Task Client_MessageReceived(SocketMessage arg)
         {
-            // Writes to its own dedicated console window
-            LogLine(arg.CleanContent);
+            Console.WriteLine(arg.CleanContent);
             return Task.CompletedTask;
         }
     }
