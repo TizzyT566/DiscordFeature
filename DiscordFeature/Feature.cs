@@ -26,9 +26,6 @@ namespace Discord
             _lock = 0;
             _hashGen = 0;
 
-            // Starts dedicated logging
-            System.Logging.StartLogging();
-
             // Creates a new instance for each feature
             foreach (Type type in System.Reflection.Assembly.GetEntryAssembly().GetTypes())
                 if (type != typeof(Feature) && typeof(Feature).IsAssignableFrom(type) && type.FullName != null)
@@ -117,22 +114,10 @@ namespace Discord
             if (result)
             {
                 _hashCode = Interlocked.Increment(ref _hashGen);
-                System.Logging.EnableLogger(GetType().Name);
             }
             else
                 throw new Exception("Feature instances cannot be manually created.");
         }
-
-        // Dedicated logging methods
-        public void Log(string message, Action? misc = null) => System.Logging.Log(GetType().Name, message, misc);
-        public void Log(string message, long ticks, Action? misc = null) => System.Logging.Log(GetType().Name, message, ticks, misc);
-        public void Log(string message, ConsoleColor foreColor, long ticks = 0, Action? misc = null) => System.Logging.Log(GetType().Name, message, foreColor, ticks, misc);
-        public void Log(string message, ConsoleColor foreColor, ConsoleColor backColor, long ticks = 0, Action? misc = null) => System.Logging.Log(GetType().Name, message, foreColor, backColor, ticks, misc);
-
-        public void LogLine(string message, Action? misc = null) => System.Logging.LogLine(GetType().Name, message, misc);
-        public void LogLine(string message, long ticks, Action? misc = null) => System.Logging.LogLine(GetType().Name, message, ticks, misc);
-        public void LogLine(string message, ConsoleColor foreColor, long ticks = 0, Action? misc = null) => System.Logging.LogLine(GetType().Name, message, foreColor, ticks, misc);
-        public void LogLine(string message, ConsoleColor foreColor, ConsoleColor backColor, long ticks = 0, Action? misc = null) => System.Logging.LogLine(GetType().Name, message, foreColor, backColor, ticks, misc);
 
         // For ensuring single feature instances when being compared
         public override bool Equals(object? obj)
