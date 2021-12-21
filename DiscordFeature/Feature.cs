@@ -17,7 +17,7 @@ namespace Discord
         private readonly int _hashCode;
 
         // A DiscordSocketClient which is exposed to all features
-        private static DiscordSocketClient? _client;
+        public static DiscordSocketClient? Client { get; private set; }
 
         static Feature()
         {
@@ -27,13 +27,13 @@ namespace Discord
             _hashGen = 0;
 
             // Creates a new instance for each feature
+            Type featureType = typeof(Feature);
             foreach (Type type in System.Reflection.Assembly.GetEntryAssembly().GetTypes())
-                if (type != typeof(Feature) && typeof(Feature).IsAssignableFrom(type) && type.FullName != null)
+                if (!type.IsAbstract && featureType.IsAssignableFrom(type) && type.FullName != null)
                     try
                     {
-                        Feature? feature = (Feature?)type.Assembly.CreateInstance(type.FullName);
-                        if (feature != null)
-                            _features.TryAdd(type, feature);
+                        Feature feature = (Feature)type.Assembly.CreateInstance(type.FullName);
+                        _features.TryAdd(type, feature);
                     }
                     catch (Exception ex)
                     {
@@ -43,17 +43,14 @@ namespace Discord
         }
 
         // Try to get the instance for the feature
-        public static bool TryGetFeatureInstance<T>(out T? feature) where T : Feature, new()
+        public static bool TryGetFeatureInstance<T>(out T? feature) where T : Feature
         {
             while (Interlocked.Exchange(ref _lock, 1) == 1) ;
-            bool result = _features.TryGetValue(typeof(T), out Feature? outVar);
+            bool result = _features.TryGetValue(typeof(T), out Feature? outVar) && outVar != null;
             Interlocked.Exchange(ref _lock, 0);
             feature = outVar as T;
             return result;
         }
-
-        // Method for initializing all required events and values for a given feature
-        public abstract void Init(in DiscordSocketClient client);
 
         private static Task LogMessage(LogMessage message)
         {
@@ -61,44 +58,39 @@ namespace Discord
             return Task.CompletedTask;
         }
 
+        // Creates the DiscordSocketClient, logs in, initializes all features and starts the bot
         public static async Task LoginAsync(TokenType tokenType, string token, DiscordSocketConfig? config = null)
         {
             while (Interlocked.Exchange(ref _lock, 1) == 1) ;
-
-            if (_client != null)
+            if (Client != null)
                 throw new InvalidOperationException("Only one instance of bot permitted.");
-
-            _client = config == null ? new() : new(config);
-
-            await _client.LoginAsync(tokenType, token);
-
-            _client.Log += LogMessage;
-
+            Client = config == null ? new() : new(config);
+            await Client.LoginAsync(tokenType, token);
+            Client.Log += LogMessage;
             foreach (Feature feature in _features.Values)
-                feature.Init(_client);
-
-            await _client.StartAsync();
-
+                feature.Init(Client);
+            await Client.StartAsync();
             Interlocked.Exchange(ref _lock, 0);
         }
 
+        // Stops the bot and logs out of discord
         public static async Task LogoutAsync()
         {
             while (Interlocked.Exchange(ref _lock, 1) == 1) ;
-            if (_client == null)
-                throw new InvalidOperationException("Bot has not started.");
-            _client.Log -= LogMessage;
-            await _client.LogoutAsync();
+            if (Client == null)
+                throw new NullReferenceException();
+            Client.Log -= LogMessage;
+            await Client.StopAsync();
+            await Client.LogoutAsync();
             Interlocked.Exchange(ref _lock, 0);
         }
 
+        // Waits for user input to continue
         public static Task LogoutKeyword(string keyword = "")
         {
             return Task.Run(() =>
             {
-                while (true)
-                    if ((Console.ReadLine() ?? "").Trim().ToLower() == keyword)
-                        break;
+                while ((Console.ReadLine() ?? "") != keyword) ;
                 return LogoutAsync();
             });
         }
@@ -109,15 +101,19 @@ namespace Discord
             while (Interlocked.Exchange(ref _lock, 1) == 1) ;
             if (_features.ContainsKey(GetType()))
                 result = false;
-            // Generates a unique hash code for any implementing classes
+            // Generates a unique hashcode for any implementing classes
             Interlocked.Exchange(ref _lock, 0);
             if (result)
-            {
                 _hashCode = Interlocked.Increment(ref _hashGen);
-            }
             else
                 throw new Exception("Feature instances cannot be manually created.");
         }
+
+        // Method for initializing features
+        public abstract void Init(in DiscordSocketClient client);
+
+        // Path to be used for feature specific files
+        public string Path(params string[] relativePath) => System.IO.Path.GetFullPath(@$"Features\{GetType().Name}\{System.IO.Path.Combine(relativePath)}");
 
         // For ensuring single feature instances when being compared
         public override bool Equals(object? obj)
