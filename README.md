@@ -63,5 +63,4 @@ To keep things nice and neat I recommend creating a new folder called 'Features'
 
 It should look like so.
 
-[https://raw.githubusercontent.com/TizzyT566/DiscordFeature/master/projectStructure.jpg](https://raw.githubusercontent.com/TizzyT566/DiscordFeature/master/projectStructure.jpg)
-![Project Structure](projectStructure.jpg)
+![Project Structure](https://raw.githubusercontent.com/TizzyT566/DiscordFeature/master/projectStructure.jpg)
