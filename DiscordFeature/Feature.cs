@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Discord
 {
+    /// <summary>
+    /// An abstract class to create Discord feature classes with.
+    /// </summary>
     public abstract class Feature
     {
         // Collection of features initialized
@@ -16,7 +19,9 @@ namespace Discord
         // Feature instance hash
         private readonly int _hashCode;
 
-        // A DiscordSocketClient which is exposed to all features
+        /// <summary>
+        /// A DiscordSocketClient which is exposed to all features
+        /// </summary>
         public static DiscordSocketClient? Client { get; private set; }
 
         static Feature()
@@ -42,7 +47,12 @@ namespace Discord
                     }
         }
 
-        // Try to get the instance for the feature
+        /// <summary>
+        /// Try to get the instance for the feature
+        /// </summary>
+        /// <typeparam name="T">The name of the class which inherits from the Feature class.</typeparam>
+        /// <param name="feature">The instance of a Feature.</param>
+        /// <returns>true if successfully retreived an instance of the specified Feature.</returns>
         public static bool TryGetFeatureInstance<T>(out T? feature) where T : Feature
         {
             while (Interlocked.Exchange(ref _lock, 1) == 1) ;
@@ -58,7 +68,14 @@ namespace Discord
             return Task.CompletedTask;
         }
 
-        // Creates the DiscordSocketClient, logs in, initializes all features and starts the bot
+        /// <summary>
+        /// Creates the DiscordSocketClient, logs in, initializes all features and starts the bot
+        /// </summary>
+        /// <param name="tokenType">Specifies the type of token to use with the client.</param>
+        /// <param name="token">The discrod token.</param>
+        /// <param name="config">DiscordSocketClient configuration.</param>
+        /// <returns>A task which logs into Discord using the specified credentials and configuration.</returns>
+        /// <exception cref="InvalidOperationException">Using DiscordFeature you are only allowed one instance.</exception>
         public static async Task LoginAsync(TokenType tokenType, string token, DiscordSocketConfig? config = null)
         {
             while (Interlocked.Exchange(ref _lock, 1) == 1) ;
@@ -73,7 +90,11 @@ namespace Discord
             Interlocked.Exchange(ref _lock, 0);
         }
 
-        // Stops the bot and logs out of discord
+        /// <summary>
+        /// Stops the bot and logs out of discord
+        /// </summary>
+        /// <returns>A task which logs out of Discord.</returns>
+        /// <exception cref="NullReferenceException">There is no client to log out of.</exception>
         public static async Task LogoutAsync()
         {
             while (Interlocked.Exchange(ref _lock, 1) == 1) ;
@@ -85,7 +106,11 @@ namespace Discord
             Interlocked.Exchange(ref _lock, 0);
         }
 
-        // Waits for user input to continue
+        /// <summary>
+        /// Waits for user input to continue
+        /// </summary>
+        /// <param name="keyword">The keyword to wait for.</param>
+        /// <returns>A task which waits for a specified input.</returns>
         public static Task LogoutKeyword(string keyword = "")
         {
             return Task.Run(() =>
@@ -95,6 +120,10 @@ namespace Discord
             });
         }
 
+        /// <summary>
+        /// Creates a Feature.
+        /// </summary>
+        /// <exception cref="Exception">DiscordFeature instances cannot be manually created.</exception>
         public Feature()
         {
             bool result = true;
@@ -109,19 +138,34 @@ namespace Discord
                 throw new Exception("Feature instances cannot be manually created.");
         }
 
-        // Method for initializing features
+        /// <summary>
+        /// Method for initializing Features
+        /// </summary>
+        /// <param name="client">The client to pass into sub-classes of Feature.</param>
         public abstract void Init(in DiscordSocketClient client);
 
-        // Path to be used for feature specific files
+        /// <summary>
+        /// Path to be used for feature specific files
+        /// </summary>
+        /// <param name="relativePath">The relative file name or directory name.</param>
+        /// <returns>A full path which describes the file or directory constucted.</returns>
         public string Path(params string[] relativePath) => System.IO.Path.GetFullPath(@$"Features\{GetType().Name}\{System.IO.Path.Combine(relativePath)}");
 
-        // For ensuring single feature instances when being compared
+        /// <summary>
+        /// For ensuring single feature instances when being compared
+        /// </summary>
+        /// <param name="obj">The object to be compared to.</param>
+        /// <returns>true if object is of the same type, otherwise false.</returns>
         public override bool Equals(object? obj)
         {
             if (obj != null)
                 return GetType() == obj.GetType();
             return false;
         }
+        /// <summary>
+        /// For ensuring single feature instances when being compared
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode() => _hashCode;
     }
 }
